@@ -10,7 +10,21 @@
       @dismiss-count-down="countDownChanged"
     >{{this.mensaje.texto}}</b-alert>
 
-    <form @submit.prevent="agregarNota()">
+    <form @submit.prevent="editarNota(notaEditar)" v-if="editar">
+      <h3>Editar nota</h3>
+      <input type="text" placeholder="Nombre" class="form-control my-2" v-model="notaEditar.nombre" />
+      <input
+        type="text"
+        placeholder="Descripcion"
+        class="form-control my-2"
+        v-model="notaEditar.descripcion"
+      />
+      <b-button class="btn-warning my-2" type="submit">Editar</b-button>
+      <b-button class="my-2 ml-2" type="submit" @click="editar=false">Cancelar</b-button>
+    </form>
+
+    <form @submit.prevent="agregarNota()" v-if="!editar">
+      <h3>Agregar nueva nota</h3>
       <input type="text" placeholder="Nombre" class="form-control my-2" v-model="nota.nombre" />
       <input
         type="text"
@@ -37,6 +51,7 @@
           <td>{{item.descripcion}}</td>
           <td>
             <b-button @click="eliminarNota(item._id)" class="btn-danger">Acción</b-button>
+            <b-button @click="activarEdicion(item._id)" class="btn-warning ml-1">Editar</b-button>
           </td>
         </tr>
       </tbody>
@@ -58,7 +73,9 @@ export default {
       nota: {
         nombre: "",
         descripcion: ""
-      }
+      },
+      editar: false,
+      notaEditar: {}
     };
   },
   created() {
@@ -124,6 +141,45 @@ export default {
           this.showAlert();
         });
     },
+
+    activarEdicion(id) {
+      this.editar = true;
+      console.log(id);
+
+      this.axios
+        .get(`/nota/${id}`)
+        .then(res => {
+          this.notaEditar = res.data;
+        })
+        .catch(e => {
+          console.log(e.response);
+          this.mensaje.color = "danger";
+          this.mensaje.texto = "Error de sistema";
+          this.showAlert();
+        });
+    },
+
+    editarNota(item) {
+      this.axios
+        .put(`/nota/${item._id}`, item)
+        .then(res => {
+          const index = this.notas.findIndex(n => n._id === res.data._id);
+          this.notas[index].nombre = res.data.nombre;
+          this.notas[index].descripcion = res.data.descripcion;
+
+          this.mensaje.color = "success";
+          this.mensaje.texto = "Nota Editada";
+          this.showAlert();
+          this.editar = false;
+        })
+        .catch(e => {
+          console.log(e.response);
+          this.mensaje.color = "danger";
+          this.mensaje.texto = "Error de sistema";
+          this.showAlert();
+        });
+    },
+
     countDownChanged(dismissCountDown) {
       this.dismissCountDown = dismissCountDown;
     },
